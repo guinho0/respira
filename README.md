@@ -1,5 +1,7 @@
 # Respira — app para parar de fumar (v1)
 
+**Acesse:** https://guinho0.github.io/respira/
+
 PWA (app web instalável no celular) em HTML/CSS/JS puro, sem etapa de build.
 Os dados ficam salvos só no aparelho (localStorage), com exportar/importar backup.
 
@@ -22,7 +24,10 @@ python -m http.server 8080
 ```
 (Service worker e notificações exigem `localhost` ou HTTPS.)
 
-## Publicar no Vercel
+## Publicação
+O site é publicado automaticamente pelo **GitHub Pages** a cada `git push` na branch `main`.
+
+### Alternativa: Vercel
 1. Crie um repositório no GitHub e envie esta pasta.
 2. Em vercel.com → **Add New → Project** → importe o repositório.
 3. Framework preset: **Other**. Sem build command, output directory = raiz. Deploy.
