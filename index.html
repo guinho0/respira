@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Respira</title>
+  <meta name="description" content="Acompanhe quanto você fuma, quanto gasta e comemore cada etapa sem cigarro.">
+  <meta name="theme-color" content="#0f766e">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="brand">Respira</h1>
+    <span id="party-pill" class="pill pill-party" hidden>🍻 Modo festa</span>
+  </header>
+
+  <main>
+    <!-- INÍCIO -->
+    <section id="view-home" class="view active" aria-label="Início">
+      <p id="greeting" class="greeting"></p>
+
+      <div class="card streak">
+        <span class="label">Sem fumar há</span>
+        <strong id="streak-timer" class="streak-timer">—</strong>
+        <div class="next-milestone">
+          <div class="bar"><span id="next-bar"></span></div>
+          <small id="next-text"></small>
+        </div>
+      </div>
+
+      <div id="alert-banner" class="banner" hidden></div>
+
+      <div id="party-card" class="card party" hidden>
+        <div>
+          <strong>Modo festa ativo</strong>
+          <small id="party-info"></small>
+        </div>
+        <button class="btn btn-ghost" data-action="party-end">Encerrar</button>
+      </div>
+
+      <button id="btn-register" class="btn-register" data-action="register">
+        <span class="plus">+</span>
+        <span id="register-label">Fumei um cigarro</span>
+      </button>
+
+      <div class="action-row">
+        <button class="btn btn-soft" data-action="sos">🆘 Estou com vontade</button>
+        <button id="btn-party" class="btn btn-soft" data-action="party-start">🍻 Modo festa</button>
+        <button class="btn btn-soft" data-action="backfill">🕘 Esqueci de registrar</button>
+      </div>
+
+      <div class="grid-3">
+        <div class="card stat">
+          <span class="label">Hoje</span>
+          <strong id="today-count">0</strong>
+          <div class="bar"><span id="today-bar"></span></div>
+          <small id="today-limit"></small>
+        </div>
+        <div class="card stat">
+          <span class="label">Gasto hoje</span>
+          <strong id="today-spent">R$ 0</strong>
+          <small id="price-each"></small>
+        </div>
+        <div class="card stat">
+          <span class="label">Vontades vencidas</span>
+          <strong id="cravings-won">0</strong>
+          <small>no total</small>
+        </div>
+      </div>
+
+      <div class="card water">
+        <div class="water-head">
+          <div>
+            <span class="label">Água hoje 💧</span>
+            <strong id="water-text">0 / 0 ml</strong>
+          </div>
+          <button class="btn btn-primary" data-action="water">+ 1 copo</button>
+        </div>
+        <div class="bar bar-water"><span id="water-bar"></span></div>
+        <small id="water-hint"></small>
+      </div>
+
+      <div class="card savings">
+        <span class="label" id="savings-label">Economia</span>
+        <strong id="savings-value">R$ 0,00</strong>
+        <small id="savings-detail"></small>
+      </div>
+    </section>
+
+    <!-- HISTÓRICO -->
+    <section id="view-history" class="view" aria-label="Histórico">
+      <h2>Últimos 7 dias</h2>
+      <div class="card">
+        <div id="week-chart" class="week-chart"></div>
+        <div class="kpis">
+          <div><small>Média/dia</small><strong id="avg7">0</strong></div>
+          <div><small>Gasto 7 dias</small><strong id="spent7">R$ 0</strong></div>
+          <div><small>Gasto no mês</small><strong id="spentMonth">R$ 0</strong></div>
+        </div>
+      </div>
+
+      <h2>Horários em que mais fuma <small class="muted">(30 dias)</small></h2>
+      <div class="card">
+        <div id="hour-chart" class="hour-chart"></div>
+        <div class="hour-axis"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>23h</span></div>
+      </div>
+
+      <h2>Gatilhos <small class="muted">(30 dias)</small></h2>
+      <div class="card"><ul id="trigger-list" class="trigger-list"></ul></div>
+
+      <div class="section-head">
+        <h2>Registros</h2>
+        <button class="btn btn-ghost" data-action="backfill">+ Adicionar esquecido</button>
+      </div>
+      <div id="log-list" class="log-list"></div>
+    </section>
+
+    <!-- SAÚDE -->
+    <section id="view-health" class="view" aria-label="Saúde">
+      <h2>O impacto até aqui</h2>
+      <div class="card impact">
+        <div><small>Cigarros registrados</small><strong id="imp-total">0</strong></div>
+        <div><small>Vida estimada perdida*</small><strong id="imp-life">0 min</strong></div>
+        <div><small>Dinheiro gasto</small><strong id="imp-spent">R$ 0</strong></div>
+        <div><small>No seu ritmo atual, por ano</small><strong id="imp-year">R$ 0</strong></div>
+      </div>
+      <p class="footnote">* Estimativa de ~20 minutos de expectativa de vida por cigarro (University College London, 2025). É uma média populacional, não um cálculo individual.</p>
+
+      <h2>Sua recuperação</h2>
+      <p class="muted">Contando desde o último cigarro registrado.</p>
+      <ol id="milestone-list" class="milestones"></ol>
+      <p class="footnote">Baseado em materiais da American Cancer Society, OMS e NHS. Não substitui orientação médica — procure o SUS (programa de tratamento do tabagismo) ou o Disque Saúde 136.</p>
+    </section>
+
+    <!-- AJUSTES -->
+    <section id="view-settings" class="view" aria-label="Ajustes">
+      <form id="settings-form" class="form">
+        <h2>Você</h2>
+        <label>Seu nome (opcional)<input name="name" type="text" autocomplete="given-name"></label>
+
+        <h2>Seu cigarro</h2>
+        <label>Tipo de cigarro<select name="type" id="type-select"></select></label>
+        <div class="row">
+          <label>Preço do maço (R$)<input name="packPrice" type="number" min="0" step="0.01" inputmode="decimal" required></label>
+          <label>Cigarros por maço<input name="perPack" type="number" min="1" step="1" inputmode="numeric" required></label>
+        </div>
+        <small class="hint">Compra avulso? Coloque o preço de um cigarro e “1” por maço. <span id="price-preview"></span></small>
+
+        <h2>Metas</h2>
+        <div class="row">
+          <label>Quantos fumava por dia antes do app<input name="baselinePerDay" type="number" min="0" step="1" inputmode="numeric"></label>
+          <label>Limite diário (alerta)<input name="dailyLimit" type="number" min="0" step="1" inputmode="numeric"></label>
+        </div>
+        <small class="hint">O valor “antes do app” é usado para calcular quanto você está economizando.</small>
+
+        <h2>Alertas de excesso</h2>
+        <div class="row">
+          <label>Avisar se fumar<input name="burstCount" type="number" min="2" step="1" inputmode="numeric"></label>
+          <label>cigarros em (min)<input name="burstMinutes" type="number" min="10" step="5" inputmode="numeric"></label>
+        </div>
+
+        <h2>Água</h2>
+        <div class="row">
+          <label>Água após cada cigarro (ml)<input name="waterPerCig" type="number" min="0" step="50" inputmode="numeric"></label>
+          <label>Meta base diária (ml)<input name="waterBase" type="number" min="0" step="100" inputmode="numeric"></label>
+        </div>
+        <div class="row">
+          <label>Tamanho do copo (ml)<input name="glassMl" type="number" min="50" step="50" inputmode="numeric"></label>
+          <label>Lembrete no modo festa (min)<input name="partyReminderMin" type="number" min="10" step="5" inputmode="numeric"></label>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit">Salvar ajustes</button>
+      </form>
+
+      <h2>Notificações</h2>
+      <div class="card">
+        <p id="notif-status" class="muted"></p>
+        <button class="btn btn-soft btn-block" data-action="notif-enable">Ativar notificações</button>
+        <button class="btn btn-ghost btn-block" data-action="notif-test">Enviar notificação de teste</button>
+        <small class="hint">Nesta versão as notificações funcionam enquanto o app está aberto ou em segundo plano recente. No iPhone, instale o app na tela de início primeiro (Compartilhar → Adicionar à Tela de Início).</small>
+      </div>
+
+      <h2>Seus dados</h2>
+      <div class="card">
+        <small class="hint">Tudo fica salvo só neste aparelho. Faça backup de vez em quando.</small>
+        <button class="btn btn-soft btn-block" data-action="export">Exportar backup (.json)</button>
+        <label class="btn btn-soft btn-block file-btn">Importar backup<input id="import-file" type="file" accept="application/json,.json" hidden></label>
+        <button class="btn btn-danger btn-block" data-action="reset">Apagar todos os dados</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="Navegação">
+    <button class="tab active" data-tab="home"><span>🏠</span>Início</button>
+    <button class="tab" data-tab="history"><span>📊</span>Histórico</button>
+    <button class="tab" data-tab="health"><span>🫁</span>Saúde</button>
+    <button class="tab" data-tab="settings"><span>⚙️</span>Ajustes</button>
+  </nav>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <!-- Detalhes do registro -->
+  <dialog id="dlg-log">
+    <form method="dialog" class="sheet">
+      <h3>Cigarro registrado</h3>
+      <p id="log-water-tip" class="tip"></p>
+      <p class="label">O que levou você a fumar?</p>
+      <div id="log-triggers" class="chips"></div>
+      <p class="label">Quanta vontade você sentia?</p>
+      <div id="log-intensity" class="chips chips-num"></div>
+      <label class="check"><input type="checkbox" id="log-water"> Vou beber água agora</label>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" value="undo">Desfazer registro</button>
+        <button class="btn btn-primary" value="save">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Registro esquecido -->
+  <dialog id="dlg-backfill">
+    <form method="dialog" class="sheet" id="backfill-form">
+      <h3>Esqueci de registrar</h3>
+      <p class="muted">Adicione os cigarros que ficaram de fora. Eles serão distribuídos no período informado e marcados como estimados.</p>
+      <label>Quantos cigarros?<input name="qty" type="number" min="1" max="60" value="1" inputmode="numeric" required></label>
+      <div class="row">
+        <label>De<input name="from" type="datetime-local" required></label>
+        <label>Até<input name="to" type="datetime-local" required></label>
+      </div>
+      <label>Gatilho<select name="trigger" id="backfill-trigger"></select></label>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" value="cancel" formnovalidate>Cancelar</button>
+        <button class="btn btn-primary" value="ok">Adicionar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Iniciar modo festa -->
+  <dialog id="dlg-party-start">
+    <form method="dialog" class="sheet" id="party-start-form">
+      <h3>🍻 Modo festa</h3>
+      <p class="muted">Para quando você vai beber e pode esquecer de registrar. Enquanto estiver ativo:</p>
+      <ul class="bullets">
+        <li>o botão registra com <b>um toque</b>, sem perguntas;</li>
+        <li>você recebe um lembrete periódico com o botão <b>“+1 cigarro”</b> na própria notificação;</li>
+        <li>no fim, você conta o maço e o app completa o que ficou faltando.</li>
+      </ul>
+      <label>Quantos cigarros tem no seu maço agora? <small class="muted">(opcional, mas é o que torna a contagem precisa)</small>
+        <input name="pack" type="number" min="0" max="100" inputmode="numeric" placeholder="ex.: 14"></label>
+      <label>Lembrar a cada (min)<input name="every" type="number" min="10" step="5" inputmode="numeric"></label>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" value="cancel" formnovalidate>Cancelar</button>
+        <button class="btn btn-primary" value="ok">Ativar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Encerrar modo festa -->
+  <dialog id="dlg-party-end">
+    <form method="dialog" class="sheet" id="party-end-form">
+      <h3>Encerrar modo festa</h3>
+      <p id="party-end-summary" class="muted"></p>
+      <div id="party-pack-fields">
+        <label>Quantos cigarros restam no maço?<input name="packEnd" type="number" min="0" max="100" inputmode="numeric"></label>
+        <label>Comprou ou ganhou cigarros durante a noite?<input name="bought" type="number" min="0" max="100" value="0" inputmode="numeric"></label>
+      </div>
+      <label>Fumou cigarros de outras pessoas? Quantos, mais ou menos?<input name="others" type="number" min="0" max="60" value="0" inputmode="numeric"></label>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" value="cancel" formnovalidate>Voltar</button>
+        <button class="btn btn-primary" value="ok">Encerrar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- SOS vontade -->
+  <dialog id="dlg-sos">
+    <div class="sheet sos">
+      <h3>A vontade passa em poucos minutos</h3>
+      <p class="muted">Respire com o círculo. Aguente só até o cronômetro zerar.</p>
+      <div class="breath"><div id="breath-circle" class="breath-circle"><span id="breath-text">Inspire</span></div></div>
+      <strong id="sos-timer" class="sos-timer">3:00</strong>
+      <p id="sos-tip" class="tip"></p>
+      <p id="sos-money" class="muted"></p>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" data-action="sos-smoked">Acabei fumando</button>
+        <button class="btn btn-primary" data-action="sos-won">Venci a vontade 💪</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Marco atingido -->
+  <dialog id="dlg-milestone">
+    <form method="dialog" class="sheet celebrate">
+      <div class="confetti">🎉</div>
+      <h3 id="ms-title"></h3>
+      <p id="ms-text"></p>
+      <p id="ms-money" class="muted"></p>
+      <div class="sheet-actions"><button class="btn btn-primary btn-block" value="ok">Continuar firme</button></div>
+    </form>
+  </dialog>
+
+  <!-- Boas-vindas -->
+  <dialog id="dlg-onboarding">
+    <form method="dialog" class="sheet" id="onboarding-form">
+      <h3>Bem-vindo ao Respira</h3>
+      <p class="muted">Registrar cada cigarro é o primeiro passo para fumar menos. Leva 1 minuto para configurar.</p>
+      <label>Seu nome (opcional)<input name="name" type="text"></label>
+      <label>Tipo de cigarro<select name="type" id="onb-type"></select></label>
+      <div class="row">
+        <label>Preço do maço (R$)<input name="packPrice" type="number" min="0" step="0.01" inputmode="decimal" value="12" required></label>
+        <label>Cigarros por maço<input name="perPack" type="number" min="1" value="20" inputmode="numeric" required></label>
+      </div>
+      <div class="row">
+        <label>Quantos fuma por dia hoje?<input name="baselinePerDay" type="number" min="0" value="15" inputmode="numeric" required></label>
+        <label>Quer limitar a quantos?<input name="dailyLimit" type="number" min="0" value="10" inputmode="numeric" required></label>
+      </div>
+      <label>Quando foi o último cigarro? <small class="muted">(opcional)</small><input name="last" type="datetime-local"></label>
+      <div class="sheet-actions"><button class="btn btn-primary btn-block" value="ok">Começar</button></div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
