@@ -18,6 +18,8 @@ Os dados ficam no aparelho (localStorage), com exportar/importar backup. Quem cr
 - **Impacto**: total gasto, projeção anual e estimativa de vida perdida (~20 min/cigarro, UCL 2025).
 - **Ranking por tempo sem fumar**: Fumaça → Bronze (8h) → Prata (1 dia) → Ouro (3 dias) → Platina (1 semana) → Esmeralda (2 semanas) → Diamante (1 mês) → Mestre (3 meses) → Grão-mestre (6 meses) → Lenda (1 ano). Recomeça a cada cigarro; o recorde fica guardado.
 - **Amigos**: nickname, grupos com código/link de convite e placar ordenado por tempo sem fumar. Os amigos veem só nickname, nível, tempo sem fumar, recorde e vontades vencidas.
+- **Avisos dos amigos**: notificação quando alguém entra num grupo seu e quando um amigo completa um marco (1 dia, 3 dias, 1 semana…), dizendo se subiu de nível. Pode ser desligado em Ajustes → Notificações.
+- **Tema** claro, escuro ou automático (segue o celular), em Ajustes → Aparência.
 
 ## Configurar o Supabase (grátis)
 1. Crie um projeto em https://supabase.com (plano Free).
@@ -50,4 +52,5 @@ Sem GitHub: com Node instalado, `npx vercel` nesta pasta. Alternativa sem instal
 - Notificações são disparadas pelo próprio app: funcionam com o app aberto ou recém-minimizado. Com o app fechado por horas, o marco é avisado na próxima abertura. Para lembretes confiáveis com o app fechado (ex.: modo festa, “1 dia sem fumar”), a v2 precisa de **Web Push com um backend** (ex.: Railway + VAPID).
 - iPhone: notificações só com o app instalado na Tela de Início (iOS 16.4+).
 - Sincronização "o mais recente vence": se o mesmo perfil for usado em dois aparelhos ao mesmo tempo, as mudanças de um podem sobrescrever as do outro.
+- Os avisos dos amigos são verificados pelo próprio app (a cada minuto com ele aberto, e ao abrir). Com o app fechado, a novidade aparece na próxima abertura; para avisar com o app fechado é preciso Web Push (Supabase Edge Function + VAPID).
 - Contas sem e-mail ficam presas ao aparelho: limpar os dados do navegador perde o acesso ao perfil (adicione um e-mail em Amigos → Conta).

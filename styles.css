@@ -260,6 +260,14 @@ body.party-on .btn-register { background: var(--party); color: #fff; padding: 30
 .leaderboard time { font-weight: 600; font-variant-numeric: tabular-nums; font-size: .88rem; white-space: nowrap; }
 .btn-leave { display: block; margin: 8px 0 0 auto; padding: 4px 6px; font-size: .82rem; color: var(--muted); }
 
+/* Tema */
+.segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; background: var(--surface-2); border-radius: 14px; margin-bottom: 10px; }
+.segmented label { margin: 0 !important; position: relative; }
+.segmented input { position: absolute; opacity: 0; pointer-events: none; }
+.segmented span { display: block; text-align: center; padding: 9px 4px; border-radius: 10px; color: var(--muted); font-weight: 600; font-size: .88rem; cursor: pointer; }
+.segmented input:checked + span { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+.segmented input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 1px; }
+
 /* Formulários */
 .form label, .sheet label { display: block; font-size: .88rem; color: var(--muted); margin-bottom: 10px; }
 input[type="text"], input[type="email"], input[type="number"], input[type="datetime-local"], select {

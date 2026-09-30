@@ -22,6 +22,7 @@ const RANKS = [
 
 const NICK_RE = /^[\p{L}\p{N}_.-]{3,20}$/u;
 const CLOUD_USER_KEY = 'respira:cloud-user';
+const FRIENDS_SEEN_KEY = 'respira:friends-seen';
 
 function rankFor(ms) {
   let i = 0;
@@ -219,12 +220,74 @@ async function loadGroups() {
     for (const r of rows || []) (cloud.members[r.group_id] ||= []).push(r);
   }
   renderGroups();
+  checkFriendEvents();
 }
 
-/** Atualiza os grupos se a aba estiver aberta e os dados tiverem mais de 1 min. */
+/** Atualiza os grupos se os dados tiverem mais de 1 min. */
 function cloudRefresh(force = false) {
   if (!cloud.profile) return;
   if (force || Date.now() - cloud.lastGroupsLoad > MIN) loadGroups();
+}
+
+/* ---------------- Avisos dos amigos ---------------- */
+
+// Os mesmos marcos que geram notificação para você (1 dia, 2 dias, 3 dias…).
+const FRIEND_MILESTONES = MILESTONES.filter((m) => m.notify !== false);
+const milestoneIndex = (ms) => FRIEND_MILESTONES.filter((m) => m.ms <= ms).length - 1;
+
+/**
+ * Compara os grupos com o que este aparelho viu da última vez e avisa sobre
+ * quem entrou e quem completou um marco. Na primeira vez só registra o estado.
+ */
+function checkFriendEvents() {
+  let seen = null;
+  try { seen = JSON.parse(localStorage.getItem(FRIENDS_SEEN_KEY)); } catch { /* recomeça */ }
+  if (seen?.owner !== cloud.user.id) seen = { owner: cloud.user.id, groups: {}, users: {} };
+  const me = cloud.user.id;
+  const events = [];
+
+  const friends = new Map();
+  for (const g of cloud.groups) {
+    const members = (cloud.members[g.id] || []).filter((m) => m.profiles);
+    const known = seen.groups[g.id];
+    for (const m of members) {
+      if (m.user_id === me) continue;
+      friends.set(m.user_id, m.profiles);
+      if (known && !known.includes(m.user_id)) {
+        const nick = m.profiles.nickname;
+        events.push({ key: `join-${g.id}-${m.user_id}`, title: `👋 ${nick} entrou no grupo`, body: `${nick} agora faz parte de “${g.name}”. Dê as boas-vindas!` });
+      }
+    }
+    seen.groups[g.id] = members.map((m) => m.user_id);
+  }
+
+  for (const [id, p] of friends) {
+    if (!p.streak_base) continue;
+    const elapsed = Date.now() - new Date(p.streak_base).getTime();
+    const idx = milestoneIndex(elapsed);
+    const { rank } = rankFor(elapsed);
+    const prev = seen.users[id];
+    // Mesmo "ponto zero" e marco maior que o último visto. Se o amigo fumou, recomeça sem aviso.
+    if (prev && prev.base === p.streak_base && idx > prev.idx) {
+      const m = FRIEND_MILESTONES[idx];
+      events.push({
+        key: `ms-${id}-${m.id}`,
+        title: `🎉 ${p.nickname} completou ${m.title} sem fumar`,
+        body: prev.rank !== rank.id ? `Subiu para ${rank.icon} ${rank.name}. Mande um incentivo!` : 'Mande um incentivo!',
+      });
+    }
+    seen.users[id] = { base: p.streak_base, idx, rank: rank.id };
+  }
+
+  try { localStorage.setItem(FRIENDS_SEEN_KEY, JSON.stringify(seen)); } catch { /* sem espaço */ }
+  if (!events.length || !state.settings.friendNotify) return;
+
+  toast(events.length === 1 ? events[0].title : `${events[0].title} e mais ${events.length - 1} novidade${events.length > 2 ? 's' : ''}`);
+  if (events.length > 3) {
+    notify('Novidades nos seus grupos', events.slice(0, 3).map((e) => e.title).join('\n') + '\n…', { tag: 'friends' });
+  } else {
+    events.forEach((e) => notify(e.title, e.body, { tag: e.key }));
+  }
 }
 
 const RPC_ERRORS = {
@@ -318,6 +381,7 @@ async function cloudWipe() {
   await c.from('profiles').delete().eq('id', uid);
   await c.auth.signOut();
   localStorage.removeItem(CLOUD_USER_KEY);
+  localStorage.removeItem(FRIENDS_SEEN_KEY);
 }
 
 /* ---------------- Renderização ---------------- */
@@ -495,10 +559,9 @@ function setupSocial() {
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden' && cloud.pushTimer) cloudPush();
-    if (document.visibilityState === 'visible' && $('#view-social').classList.contains('active')) cloudRefresh();
+    if (document.visibilityState === 'visible') cloudRefresh();
   });
 
-  setInterval(() => {
-    if (document.visibilityState === 'visible' && $('#view-social').classList.contains('active')) cloudRefresh();
-  }, 30 * 1000);
+  // Busca novidades dos grupos (e dispara os avisos) mesmo fora da aba Amigos.
+  setInterval(() => cloudRefresh(), 60 * 1000);
 }

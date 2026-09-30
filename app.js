@@ -80,6 +80,8 @@ function defaults() {
       burstMinutes: 60,
       partyReminderMin: 30,
       notify: false,
+      friendNotify: true,
+      theme: 'auto', // auto | light | dark
       startDate: Date.now(),
     },
     logs: [],      // { id, ts, trigger, intensity, estimated, party }
@@ -458,7 +460,17 @@ function closeSOS() {
 
 /* ---------------- Renderização ---------------- */
 
+function applyTheme() {
+  const t = state.settings.theme;
+  const root = document.documentElement;
+  if (t === 'light' || t === 'dark') root.dataset.theme = t;
+  else delete root.dataset.theme;
+  const dark = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+  $('meta[name="theme-color"]').content = dark ? '#0c1413' : '#0f766e';
+}
+
 function render() {
+  applyTheme();
   document.body.classList.toggle('party-on', !!state.party);
   $('#party-pill').hidden = !state.party;
   renderHome();
@@ -645,6 +657,7 @@ function renderSettings() {
   for (const [k, v] of Object.entries(s)) {
     if (f.elements[k]) f.elements[k].value = v;
   }
+  f.elements.friendNotify.checked = !!s.friendNotify;
   updatePricePreview();
   const st = $('#notif-status');
   if (!('Notification' in window)) st.textContent = 'Este navegador não suporta notificações.';
@@ -844,6 +857,18 @@ onSheet('#party-end-form', (action, f) => {
 
 $('#dlg-sos').addEventListener('cancel', () => closeSOS());
 
+// Tema e avisos dos amigos valem na hora, sem precisar de "Salvar ajustes".
+$('#settings-form').addEventListener('change', (e) => {
+  if (e.target.name === 'theme') {
+    state.settings.theme = e.target.value;
+    save();
+    applyTheme();
+  } else if (e.target.name === 'friendNotify') {
+    state.settings.friendNotify = e.target.checked;
+    save();
+  }
+});
+
 $('#settings-form').addEventListener('input', (e) => {
   if (e.target.name === 'packPrice' || e.target.name === 'perPack') updatePricePreview();
 });
@@ -933,6 +958,8 @@ function init() {
   render();
   if (!state.onboarded) openDialog('#dlg-onboarding');
   else { checkMilestones(); checkRank(); }
+
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 
   setInterval(renderLive, 1000);
   setInterval(() => {

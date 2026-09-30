@@ -12,6 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script>/* aplica o tema antes de desenhar a página, sem piscar */try{var t=JSON.parse(localStorage.getItem('respira:v1')).settings.theme;if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -207,6 +208,14 @@
         <h2>Você</h2>
         <label>Seu nome (opcional)<input name="name" type="text" autocomplete="given-name"></label>
 
+        <h2>Aparência</h2>
+        <div class="segmented" role="radiogroup" aria-label="Tema">
+          <label><input type="radio" name="theme" value="auto"><span>Automático</span></label>
+          <label><input type="radio" name="theme" value="light"><span>☀️ Claro</span></label>
+          <label><input type="radio" name="theme" value="dark"><span>🌙 Escuro</span></label>
+        </div>
+        <small class="hint">“Automático” segue o tema do seu celular.</small>
+
         <h2>Seu cigarro</h2>
         <label>Tipo de cigarro<select name="type" id="type-select"></select></label>
         <div class="row">
@@ -246,6 +255,7 @@
         <p id="notif-status" class="muted"></p>
         <button class="btn btn-soft btn-block" data-action="notif-enable">Ativar notificações</button>
         <button class="btn btn-ghost btn-block" data-action="notif-test">Enviar notificação de teste</button>
+        <label class="check"><input type="checkbox" name="friendNotify" form="settings-form"> Avisar quando alguém entrar nos meus grupos ou um amigo completar um marco</label>
         <small class="hint">Nesta versão as notificações funcionam enquanto o app está aberto ou em segundo plano recente. No iPhone, instale o app na tela de início primeiro (Compartilhar → Adicionar à Tela de Início).</small>
       </div>
 
