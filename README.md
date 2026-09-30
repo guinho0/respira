@@ -16,7 +16,7 @@ Os dados ficam no aparelho (localStorage), com exportar/importar backup. Quem cr
 - **SOS vontade**: respiração guiada + cronômetro de 3 minutos + dica; conta “vontades vencidas”.
 - **Histórico**: últimos 7 dias, horários em que mais fuma, gatilhos, lista editável.
 - **Impacto**: total gasto, projeção anual e estimativa de vida perdida (~20 min/cigarro, UCL 2025).
-- **Ranking com fumaça**: o nível sobe com o tempo sem fumar acumulado — Fumaça → Bronze (8h) → Prata (1 dia) → Ouro (3 dias) → Platina (1 semana) → Esmeralda (2 semanas) → Diamante (1 mês) → Mestre (3 meses) → Grão-mestre (6 meses) → Lenda (1 ano). Um cigarro não derruba o nível: cada um cobre o ícone de fumaça, e no 3º você cai um nível (para o início dele) e a fumaça zera. Subir de nível limpa a fumaça.
+- **Ranking com fumaça**: o nível sobe com o tempo sem fumar acumulado — Fumaça → Bronze (8h) → Prata (1 dia) → Ouro (3 dias) → Platina (1 semana) → Esmeralda (2 semanas) → Diamante (1 mês) → Mestre (3 meses) → Grão-mestre (6 meses) → Lenda (1 ano). Um cigarro não derruba o nível: cada um cobre o ícone de fumaça, e no 3º você volta para o início (Fumaça, progresso zerado) e a fumaça zera. Subir de nível limpa a fumaça.
 - **Instalar app**: botão “Instalar” no Android/Chrome e passo a passo do Compartilhar → Adicionar à Tela de Início no iPhone.
 - **Amigos**: nickname, grupos com código/link de convite e placar ordenado por tempo sem fumar. Os amigos veem só nickname, nível, tempo sem fumar, recorde e vontades vencidas.
 - **Avisos dos amigos**: notificação quando alguém entra num grupo seu e quando um amigo completa um marco (1 dia, 3 dias, 1 semana…), dizendo se subiu de nível. Pode ser desligado em Ajustes → Notificações.

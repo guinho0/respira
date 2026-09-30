@@ -7,7 +7,7 @@
  * ============================================================ */
 
 // Nível pelo progresso: tempo sem fumar acumulado. Um cigarro não derruba o nível —
-// cada um cobre o ícone de fumaça e o 3º faz cair um nível (a fumaça zera).
+// cada um cobre o ícone de fumaça e o 3º faz voltar ao início (Fumaça, progresso zerado).
 // Subir de nível dissipa a fumaça.
 const RANKS = [
   { id: 'fumaca', ms: 0, name: 'Fumaça', icon: '🌫️', text: 'Todo recomeço conta. Cada hora sem fumar te leva para cima.' },
@@ -61,8 +61,7 @@ function rankReplay() {
     }
     smoke++;
     if (smoke >= SMOKE_LIMIT) {
-      const i = rankIndex(progress);
-      progress = i > 0 ? RANKS[i - 1].ms : 0;
+      progress = 0;
       smoke = 0;
     }
   }
@@ -108,7 +107,7 @@ const rankBadge = (rank, smoke, cls = '') =>
   `<span class="rank-badge ${cls}" data-smoke="${smoke}" title="${rank.name}${smoke ? ` · fumaça ${smoke}/${SMOKE_LIMIT}` : ''}">${rank.icon}</span>`;
 
 /** O que acontece no próximo 3º cigarro, a partir do nível `index`. */
-const fallText = (index) => (index > 0 ? `você cai para ${RANKS[index - 1].icon} ${RANKS[index - 1].name}` : 'seu progresso volta ao início');
+const fallText = (index) => (index > 0 ? `você volta para o início (${RANKS[0].icon} ${RANKS[0].name})` : 'seu progresso volta ao início');
 
 /* ---------------- Aviso ao mudar de nível ---------------- */
 
@@ -122,8 +121,8 @@ function rankSmokeText() {
   if (prevIndex > r.index) {
     const prev = RANKS[prevIndex];
     return {
-      short: `💨 caiu para ${r.rank.icon} ${r.rank.name}`,
-      long: `💨 Terceiro cigarro: a fumaça cobriu seu nível e você caiu de ${prev.icon} ${prev.name} para ${r.rank.icon} ${r.rank.name}. A fumaça se dissipou — dá para subir de novo.`,
+      short: `💨 voltou para ${r.rank.icon} ${r.rank.name}`,
+      long: `💨 Terceiro cigarro: a fumaça cobriu seu nível ${prev.icon} ${prev.name} e você voltou para o início (${r.rank.icon} ${r.rank.name}). A fumaça se dissipou — dá para subir de novo.`,
     };
   }
   if (r.smoke === 0) {
@@ -441,9 +440,25 @@ async function inviteToGroup(code) {
 
 /* ---------------- Conta (e-mail opcional) ---------------- */
 
+/** Traduz os erros de e-mail do Supabase Auth (error.code) em mensagens claras. */
+function authErrorText(error, fallback) {
+  const byCode = {
+    email_exists: 'Esse e-mail já está em outra conta.',
+    user_already_exists: 'Esse e-mail já está em outra conta.',
+    over_email_send_rate_limit: 'Limite de e-mails atingido. Espere cerca de 1 hora e tente de novo.',
+    over_request_rate_limit: 'Muitas tentativas seguidas. Espere alguns minutos e tente de novo.',
+    email_address_invalid: 'E-mail inválido. Confira se digitou certo.',
+    otp_disabled: 'Não encontramos uma conta com esse e-mail.',
+    user_not_found: 'Não encontramos uma conta com esse e-mail.',
+  };
+  if (byCode[error.code]) return byCode[error.code];
+  if (error.status === 429) return byCode.over_email_send_rate_limit;
+  return `${fallback} (${error.message || error.code || 'erro desconhecido'})`;
+}
+
 async function linkEmail(email) {
   const { error } = await cloud.client.auth.updateUser({ email }, { emailRedirectTo: redirectUrl() });
-  toast(error ? 'Não foi possível usar esse e-mail. Ele já pode estar em outra conta.' : `Enviamos um link de confirmação para ${email}.`);
+  toast(error ? authErrorText(error, 'Não foi possível usar esse e-mail.') : `Enviamos um link de confirmação para ${email}.`);
 }
 
 async function loginWithEmail(email) {
@@ -452,7 +467,7 @@ async function loginWithEmail(email) {
     email,
     options: { shouldCreateUser: false, emailRedirectTo: redirectUrl() },
   });
-  toast(error ? 'Não encontramos uma conta com esse e-mail.' : `Enviamos um link de acesso para ${email}. Abra-o neste aparelho.`);
+  toast(error ? authErrorText(error, 'Não foi possível enviar o link.') : `Enviamos um link de acesso para ${email}. Abra-o neste aparelho.`);
   return !error;
 }
 
