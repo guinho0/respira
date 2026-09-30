@@ -6,28 +6,88 @@
  * Sem perfil criado, nada sai do aparelho.
  * ============================================================ */
 
-// Nível pelo tempo sem fumar (desde o último cigarro).
+// Nível pelo progresso: tempo sem fumar acumulado. Um cigarro não derruba o nível —
+// cada um cobre o ícone de fumaça e o 3º faz cair um nível (a fumaça zera).
+// Subir de nível dissipa a fumaça.
 const RANKS = [
-  { id: 'fumaca', ms: 0, name: 'Fumaça', icon: '🌫️', text: 'Todo recomeço conta. O relógio já está correndo a seu favor.' },
-  { id: 'bronze', ms: 8 * HOUR, name: 'Bronze', icon: '🥉', text: 'Metade do monóxido de carbono já saiu do seu sangue.' },
-  { id: 'prata', ms: DAY, name: 'Prata', icon: '🥈', text: 'Um dia inteiro. Seu corpo já começou a limpeza.' },
-  { id: 'ouro', ms: 3 * DAY, name: 'Ouro', icon: '🥇', text: 'Sem nicotina no corpo e com o fôlego voltando.' },
-  { id: 'platina', ms: 7 * DAY, name: 'Platina', icon: '💠', text: 'Uma semana: a fase mais difícil está ficando para trás.' },
-  { id: 'esmeralda', ms: 14 * DAY, name: 'Esmeralda', icon: '💚', text: 'Duas semanas. Caminhar e subir escadas já cansa menos.' },
-  { id: 'diamante', ms: 30 * DAY, name: 'Diamante', icon: '💎', text: 'Um mês! Os pulmões voltaram a se limpar sozinhos.' },
-  { id: 'mestre', ms: 90 * DAY, name: 'Mestre', icon: '🏅', text: 'Três meses. Sua função pulmonar pode ter melhorado até 10%.' },
-  { id: 'grao-mestre', ms: 182 * DAY, name: 'Grão-mestre', icon: '👑', text: 'Meio ano livre. Inspiração para qualquer um.' },
-  { id: 'lenda', ms: 365 * DAY, name: 'Lenda', icon: '🌟', text: 'Um ano sem fumar. O risco cardíaco caiu pela metade.' },
+  { id: 'fumaca', ms: 0, name: 'Fumaça', icon: '🌫️', text: 'Todo recomeço conta. Cada hora sem fumar te leva para cima.' },
+  { id: 'bronze', ms: 8 * HOUR, name: 'Bronze', icon: '🥉', text: 'Primeiro degrau conquistado. Continue subindo.' },
+  { id: 'prata', ms: DAY, name: 'Prata', icon: '🥈', text: 'Um dia inteiro de progresso acumulado.' },
+  { id: 'ouro', ms: 3 * DAY, name: 'Ouro', icon: '🥇', text: 'Três dias de progresso. O hábito está mudando.' },
+  { id: 'platina', ms: 7 * DAY, name: 'Platina', icon: '💠', text: 'Uma semana de progresso. A fase mais difícil está ficando para trás.' },
+  { id: 'esmeralda', ms: 14 * DAY, name: 'Esmeralda', icon: '💚', text: 'Duas semanas de progresso. Você está no controle.' },
+  { id: 'diamante', ms: 30 * DAY, name: 'Diamante', icon: '💎', text: 'Um mês de progresso. Brilho próprio!' },
+  { id: 'mestre', ms: 90 * DAY, name: 'Mestre', icon: '🏅', text: 'Três meses. Você domina as vontades.' },
+  { id: 'grao-mestre', ms: 182 * DAY, name: 'Grão-mestre', icon: '👑', text: 'Meio ano de progresso. Inspiração para o grupo.' },
+  { id: 'lenda', ms: 365 * DAY, name: 'Lenda', icon: '🌟', text: 'Um ano de progresso. Lenda!' },
 ];
+const SMOKE_LIMIT = 3;
 
 const NICK_RE = /^[\p{L}\p{N}_.-]{3,20}$/u;
 const CLOUD_USER_KEY = 'respira:cloud-user';
 const FRIENDS_SEEN_KEY = 'respira:friends-seen';
 
-function rankFor(ms) {
+function rankIndex(ms) {
   let i = 0;
   while (i + 1 < RANKS.length && RANKS[i + 1].ms <= ms) i++;
-  return { rank: RANKS[i], next: RANKS[i + 1] || null };
+  return i;
+}
+
+function rankFor(ms) {
+  const index = rankIndex(ms);
+  return { rank: RANKS[index], next: RANKS[index + 1] || null, index };
+}
+
+let rankCache = null;
+
+/** Repassa o histórico e devolve o estado do ranking no instante do último cigarro. */
+function rankReplay() {
+  const logs = state.logs;
+  const start = logs.length ? Math.min(state.settings.startDate, logs[0].ts) : state.settings.startDate;
+  const key = `${logs.length}:${logs[logs.length - 1]?.ts}:${start}`;
+  if (rankCache?.logs === logs && rankCache.key === key) return rankCache;
+
+  let progress = 0;
+  let smoke = 0;
+  let at = start;
+  let peak = 0;
+  for (const l of logs) {
+    if (l.ts > at) {
+      const before = rankIndex(progress);
+      progress += l.ts - at;
+      if (rankIndex(progress) > before) smoke = 0;
+      peak = Math.max(peak, progress);
+      at = l.ts;
+    }
+    smoke++;
+    if (smoke >= SMOKE_LIMIT) {
+      const i = rankIndex(progress);
+      progress = i > 0 ? RANKS[i - 1].ms : 0;
+      smoke = 0;
+    }
+  }
+  rankCache = { logs, key, progress, smoke, at, peak };
+  return rankCache;
+}
+
+/** Nível agora: { rank, next, index, progress, smoke, peak }. */
+function rankNow() {
+  const r = rankReplay();
+  const progress = r.progress + Math.max(0, Date.now() - r.at);
+  const climbed = rankIndex(progress) > rankIndex(r.progress);
+  return { ...rankFor(progress), progress, smoke: climbed ? 0 : r.smoke, peak: Math.max(r.peak, progress) };
+}
+
+/** Nível de um amigo a partir do resumo publicado no perfil dele. */
+function friendRank(p) {
+  if (p.rank_ms == null || !p.rank_at) {
+    const elapsed = p.streak_base ? Date.now() - new Date(p.streak_base).getTime() : 0;
+    return { ...rankFor(elapsed), progress: elapsed, smoke: 0 };
+  }
+  const base = Number(p.rank_ms);
+  const progress = base + Math.max(0, Date.now() - new Date(p.rank_at).getTime());
+  const climbed = rankIndex(progress) > rankIndex(base);
+  return { ...rankFor(progress), progress, smoke: climbed ? 0 : Number(p.smoke) || 0 };
 }
 
 const currentStreak = () => Date.now() - streakBase();
@@ -43,24 +103,57 @@ function bestStreak() {
   return Math.max(best, currentStreak());
 }
 
-/* ---------------- Aviso ao subir de nível ---------------- */
+/** Ícone do nível com a camada de fumaça (0 a 2). */
+const rankBadge = (rank, smoke, cls = '') =>
+  `<span class="rank-badge ${cls}" data-smoke="${smoke}" title="${rank.name}${smoke ? ` · fumaça ${smoke}/${SMOKE_LIMIT}` : ''}">${rank.icon}</span>`;
+
+/** O que acontece no próximo 3º cigarro, a partir do nível `index`. */
+const fallText = (index) => (index > 0 ? `você cai para ${RANKS[index - 1].icon} ${RANKS[index - 1].name}` : 'seu progresso volta ao início');
+
+/* ---------------- Aviso ao mudar de nível ---------------- */
+
+/**
+ * Chamado logo depois de registrar um cigarro, antes do checkRank():
+ * explica o que aconteceu com a fumaça e o nível.
+ */
+function rankSmokeText() {
+  const r = rankNow();
+  const prevIndex = RANKS.findIndex((x) => x.id === state.notified.rank);
+  if (prevIndex > r.index) {
+    const prev = RANKS[prevIndex];
+    return {
+      short: `💨 caiu para ${r.rank.icon} ${r.rank.name}`,
+      long: `💨 Terceiro cigarro: a fumaça cobriu seu nível e você caiu de ${prev.icon} ${prev.name} para ${r.rank.icon} ${r.rank.name}. A fumaça se dissipou — dá para subir de novo.`,
+    };
+  }
+  if (r.smoke === 0) {
+    return { short: '💨 progresso reiniciado', long: `💨 Terceiro cigarro: seu progresso em ${r.rank.icon} ${r.rank.name} voltou ao início.` };
+  }
+  const left = SMOKE_LIMIT - r.smoke;
+  return {
+    short: `💨 fumaça ${r.smoke}/${SMOKE_LIMIT}`,
+    long: `💨 Fumaça no seu nível: ${r.smoke} de ${SMOKE_LIMIT}. ${left === 1 ? 'Mais um cigarro e' : `Mais ${left} cigarros e`} ${fallText(r.index)}. Subir de nível limpa a fumaça.`,
+  };
+}
 
 function checkRank() {
-  const base = streakBase();
-  const { rank } = rankFor(currentStreak());
+  const r = rankNow();
   const n = state.notified;
-  // Novo cigarro: volta ao nível correspondente sem comemorar.
-  if (n.rankBase !== base) {
-    n.rankBase = base;
-    n.rank = rank.id;
+  const key = rankReplay().key;
+  // Histórico mudou (cigarro registrado, desfeito ou apagado): só acompanha, sem comemorar.
+  if (n.rankKey !== key) {
+    n.rankKey = key;
+    n.rank = r.rank.id;
     save();
     return;
   }
-  if (n.rank === rank.id) return;
-  n.rank = rank.id;
+  if (n.rank === r.rank.id) return;
+  const up = RANKS.findIndex((x) => x.id === n.rank) < r.index;
+  n.rank = r.rank.id;
   save();
-  toast(`${rank.icon} Você subiu para ${rank.name}!`);
-  notify(`${rank.icon} Novo nível: ${rank.name}`, rank.text, { tag: 'rank' });
+  if (!up) return;
+  toast(`${r.rank.icon} Você subiu para ${r.rank.name}! A fumaça sumiu.`);
+  notify(`${r.rank.icon} Novo nível: ${r.rank.name}`, r.rank.text, { tag: 'rank' });
 }
 
 /* ---------------- Nuvem (Supabase) ---------------- */
@@ -132,6 +225,9 @@ function profileSummary() {
   return {
     streak_base: new Date(streakBase()).toISOString(),
     best_streak_ms: Math.round(bestStreak()),
+    rank_ms: Math.round(rankNow().progress),
+    rank_at: new Date().toISOString(),
+    smoke: rankNow().smoke,
     cravings_won: state.cravings.length,
     avg7: Math.round(avgPerDay(7) * 10) / 10,
     updated_at: new Date().toISOString(),
@@ -215,7 +311,7 @@ async function loadGroups() {
   if (ids.length) {
     const { data: rows } = await c
       .from('group_members')
-      .select('group_id, user_id, profiles(nickname, streak_base, best_streak_ms, cravings_won, avg7, updated_at)')
+      .select('group_id, user_id, profiles(nickname, streak_base, best_streak_ms, cravings_won, avg7, rank_ms, rank_at, smoke, updated_at)')
       .in('group_id', ids);
     for (const r of rows || []) (cloud.members[r.group_id] ||= []).push(r);
   }
@@ -265,7 +361,7 @@ function checkFriendEvents() {
     if (!p.streak_base) continue;
     const elapsed = Date.now() - new Date(p.streak_base).getTime();
     const idx = milestoneIndex(elapsed);
-    const { rank } = rankFor(elapsed);
+    const { rank } = friendRank(p);
     const prev = seen.users[id];
     // Mesmo "ponto zero" e marco maior que o último visto. Se o amigo fumou, recomeça sem aviso.
     if (prev && prev.base === p.streak_base && idx > prev.idx) {
@@ -386,25 +482,37 @@ async function cloudWipe() {
 
 /* ---------------- Renderização ---------------- */
 
-function renderRankLive() {
-  const elapsed = currentStreak();
-  const { rank, next } = rankFor(elapsed);
-  const chip = $('#rank-chip');
-  chip.textContent = `${rank.icon} ${rank.name}`;
+let lastBadgeKey = '';
 
-  $('#rank-icon').textContent = rank.icon;
+function renderRankLive() {
+  const r = rankNow();
+  const { rank, next, progress, smoke } = r;
+
+  // Só redesenha os ícones quando mudam, para a animação da fumaça não reiniciar a cada segundo.
+  const badgeKey = `${rank.id}:${smoke}`;
+  if (badgeKey !== lastBadgeKey) {
+    lastBadgeKey = badgeKey;
+    $('#rank-chip').innerHTML = `${rankBadge(rank, smoke)} ${rank.name}`;
+    $('#rank-icon').innerHTML = rankBadge(rank, smoke, 'big');
+    const dots = Array.from({ length: SMOKE_LIMIT }, (_, i) => `<i class="${i < smoke ? 'on' : ''}"></i>`).join('');
+    const left = SMOKE_LIMIT - smoke;
+    $('#rank-smoke').innerHTML = `<span class="smoke-dots" aria-hidden="true">${dots}</span><small>${smoke === 0
+      ? `Sem fumaça. Cada cigarro cobre seu nível de fumaça; no ${SMOKE_LIMIT}º ${fallText(r.index)}.`
+      : `Fumaça ${smoke}/${SMOKE_LIMIT}: ${left === 1 ? 'mais 1 cigarro' : `mais ${left} cigarros`} e ${fallText(r.index)}. Subir de nível limpa a fumaça.`}</small>`;
+  }
+
   $('#rank-name').textContent = rank.name;
   $('#rank-text').textContent = rank.text;
   if (next) {
-    const pct = ((elapsed - rank.ms) / (next.ms - rank.ms)) * 100;
+    const pct = ((progress - rank.ms) / (next.ms - rank.ms)) * 100;
     $('#rank-bar').style.width = clamp(pct, 0, 100) + '%';
-    $('#rank-next').textContent = `Próximo: ${next.icon} ${next.name} em ${duration(next.ms - elapsed)}`;
+    $('#rank-next').textContent = `Próximo: ${next.icon} ${next.name} em ${duration(next.ms - progress)} sem fumar`;
   } else {
     $('#rank-bar').style.width = '100%';
     $('#rank-next').textContent = 'Nível máximo. Você é inspiração!';
   }
-  const best = rankFor(bestStreak()).rank;
-  $('#rank-best').textContent = `Seu recorde: ${duration(bestStreak())} (${best.icon} ${best.name})`;
+  const peak = rankFor(r.peak).rank;
+  $('#rank-best').textContent = `Maior nível: ${peak.icon} ${peak.name} · recorde sem fumar: ${duration(bestStreak())}`;
 
   // Tempo sem fumar no placar dos grupos, atualizado ao vivo.
   $$('[data-since]').forEach((el) => {
@@ -414,11 +522,10 @@ function renderRankLive() {
 }
 
 function renderRankList() {
-  const elapsed = currentStreak();
+  const { index } = rankNow();
   $('#rank-list').innerHTML = RANKS.map((r, i) => {
-    const next = RANKS[i + 1];
-    const cls = elapsed >= r.ms ? (next && elapsed >= next.ms ? 'done' : 'current') : 'locked';
-    const at = r.ms === 0 ? 'logo após o último cigarro' : `com ${duration(r.ms).replace(/ 0h 0min$/, '').replace(/ 0min$/, '')} sem fumar`;
+    const cls = i < index ? 'done' : i === index ? 'current' : 'locked';
+    const at = r.ms === 0 ? 'onde todo mundo começa' : `${duration(r.ms).replace(/ 0h 0min$/, '').replace(/ 0min$/, '')} de progresso`;
     return `<li class="${cls}"><span class="rk">${r.icon}</span><div><strong>${r.name}</strong><small>${at}</small></div></li>`;
   }).join('');
 }
@@ -459,20 +566,22 @@ function renderGroups() {
       .map((m) => {
         const p = m.profiles;
         // Para você, usa os dados locais (sempre atualizados).
-        const since = m.user_id === me ? streakBase() : new Date(p.streak_base || Date.now()).getTime();
-        return { ...p, me: m.user_id === me, since, best: m.user_id === me ? bestStreak() : Number(p.best_streak_ms) || 0 };
+        const mine = m.user_id === me;
+        const since = mine ? streakBase() : new Date(p.streak_base || Date.now()).getTime();
+        return { ...p, me: mine, since, rk: mine ? rankNow() : friendRank(p), best: mine ? bestStreak() : Number(p.best_streak_ms) || 0 };
       })
-      .sort((a, b) => a.since - b.since);
+      // Maior progresso no ranking primeiro; empate: quem está há mais tempo sem fumar.
+      .sort((a, b) => b.rk.progress - a.rk.progress || a.since - b.since);
     const rows = members.map((p, i) => {
-      const { rank } = rankFor(Date.now() - p.since);
+      const { rank, smoke } = p.rk;
       const stale = !p.me && Date.now() - new Date(p.updated_at).getTime() > 2 * DAY
         ? ` · visto ${new Date(p.updated_at).toLocaleDateString('pt-BR')}` : '';
       return `<li class="${p.me ? 'me' : ''}">
         <span class="pos">${i + 1}º</span>
-        <span class="rk" title="${rank.name}">${rank.icon}</span>
+        <span class="rk">${rankBadge(rank, smoke)}</span>
         <div class="who"><b>${esc(p.nickname)}${p.me ? ' <small>(você)</small>' : ''}</b>
-          <small>${rank.name} · recorde ${duration(p.best)} · ${p.cravings_won} vontades vencidas${stale}</small></div>
-        <time data-since="${p.since}">${duration(Date.now() - p.since)}</time>
+          <small>${rank.name}${smoke ? ` · 💨 ${smoke}/${SMOKE_LIMIT}` : ''} · recorde ${duration(p.best)} · ${p.cravings_won} vontades vencidas${stale}</small></div>
+        <time data-since="${p.since}" title="Sem fumar há">${duration(Date.now() - p.since)}</time>
       </li>`;
     }).join('');
     return `<div class="card group">

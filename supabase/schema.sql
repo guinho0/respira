@@ -16,6 +16,9 @@ create table public.profiles (
   best_streak_ms bigint not null default 0,
   cravings_won int not null default 0,
   avg7 real not null default 0,     -- média de cigarros/dia nos últimos 7 dias
+  rank_ms bigint,                   -- progresso no ranking (ms) no instante rank_at
+  rank_at timestamptz,
+  smoke smallint not null default 0 check (smoke between 0 and 2),  -- fumaça sobre o nível (0–2)
   updated_at timestamptz not null default now()
 );
 create unique index profiles_nickname_key on public.profiles (lower(nickname));

@@ -40,6 +40,16 @@
 
       <div id="alert-banner" class="banner" hidden></div>
 
+      <div id="install-card" class="card install" hidden>
+        <strong>📲 Instale o Respira no celular</strong>
+        <small class="install-prompt">Abre em tela cheia, funciona sem internet e recebe notificações.</small>
+        <small class="install-ios">Toque em <b>Compartilhar</b> <svg class="ios-share" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 11v9h14v-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> e depois em <b>Adicionar à Tela de Início</b>. No iPhone, as notificações só funcionam assim.</small>
+        <div class="install-actions">
+          <button class="btn btn-ghost" data-action="install-dismiss">Agora não</button>
+          <button class="btn btn-primary install-prompt" data-action="install">Instalar</button>
+        </div>
+      </div>
+
       <div id="party-card" class="card party" hidden>
         <div>
           <strong>Modo festa ativo</strong>
@@ -152,12 +162,13 @@
         </div>
         <div class="bar"><span id="rank-bar"></span></div>
         <small id="rank-next"></small>
+        <div id="rank-smoke" class="smoke-meter"></div>
         <small id="rank-best" class="rank-best"></small>
       </div>
       <details class="card rank-details">
         <summary>Todos os níveis</summary>
         <ol id="rank-list" class="ranks"></ol>
-        <small class="hint">O nível sobe conforme o tempo sem fumar e recomeça a cada cigarro registrado. Seu recorde fica guardado.</small>
+        <small class="hint">O nível sobe com o tempo sem fumar acumulado. Um cigarro não derruba o nível: cada um cobre o ícone de fumaça, e no 3º você cai um nível e a fumaça zera. Subir de nível limpa a fumaça.</small>
       </details>
 
       <h2>Seu perfil</h2>
@@ -250,6 +261,19 @@
         <button class="btn btn-primary btn-block" type="submit">Salvar ajustes</button>
       </form>
 
+      <div id="install-settings" hidden>
+        <h2>Instalar app</h2>
+        <div class="card">
+          <p class="muted install-prompt">Instale para abrir em tela cheia, usar sem internet e receber notificações.</p>
+          <button class="btn btn-primary btn-block install-prompt" data-action="install">📲 Instalar o Respira</button>
+          <ol class="bullets install-ios">
+            <li>Toque em <b>Compartilhar</b> (o quadrado com uma seta para cima <svg class="ios-share" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 11v9h14v-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>).</li>
+            <li>Role e toque em <b>Adicionar à Tela de Início</b> → <b>Adicionar</b>.</li>
+            <li>Abra o Respira pelo novo ícone e ative as notificações aqui em Ajustes.</li>
+          </ol>
+        </div>
+      </div>
+
       <h2>Notificações</h2>
       <div class="card">
         <p id="notif-status" class="muted"></p>
@@ -283,6 +307,7 @@
   <dialog id="dlg-log">
     <form method="dialog" class="sheet">
       <h3>Cigarro registrado</h3>
+      <p id="log-rank" class="tip smoke-tip" hidden></p>
       <p id="log-water-tip" class="tip"></p>
       <p class="label">O que levou você a fumar?</p>
       <div id="log-triggers" class="chips"></div>

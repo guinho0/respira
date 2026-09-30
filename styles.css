@@ -227,6 +227,34 @@ body.party-on .btn-register { background: var(--party); color: #fff; padding: 30
 .rank-head strong { display: block; font-size: 1.35rem; }
 .rank-head small { display: block; }
 .rank-best { display: block; margin-top: 6px; }
+
+/* Fumaça sobre o ícone do nível: 1º e 2º cigarro; no 3º o nível cai e ela some. */
+.rank-badge { position: relative; display: inline-block; line-height: 1; transition: filter .6s ease; }
+.rank-badge::after {
+  content: ""; position: absolute; inset: -35%; pointer-events: none; opacity: 0; border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 62%, rgba(150, 150, 150, .95) 0 20%, transparent 46%),
+    radial-gradient(circle at 66% 42%, rgba(185, 185, 185, .9) 0 18%, transparent 44%),
+    radial-gradient(circle at 50% 78%, rgba(130, 130, 130, .85) 0 16%, transparent 42%),
+    radial-gradient(circle at 48% 30%, rgba(200, 200, 200, .8) 0 14%, transparent 40%);
+  filter: blur(3px);
+  transition: opacity .6s ease;
+  animation: smoke-drift 5s ease-in-out infinite alternate;
+}
+.rank-badge[data-smoke="1"] { filter: grayscale(.4); }
+.rank-badge[data-smoke="1"]::after { opacity: .5; }
+.rank-badge[data-smoke="2"] { filter: grayscale(.8) brightness(.85); }
+.rank-badge[data-smoke="2"]::after { opacity: .92; inset: -45%; }
+@keyframes smoke-drift {
+  from { transform: translate(-6%, 5%) scale(1); }
+  to { transform: translate(6%, -6%) scale(1.1); }
+}
+.smoke-meter { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.smoke-meter small { flex: 1; }
+.smoke-dots { display: inline-flex; gap: 4px; flex: none; }
+.smoke-dots i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--muted); opacity: .5; }
+.smoke-dots i.on { background: var(--muted); opacity: 1; }
+.smoke-tip { background: var(--surface-2); color: var(--text); }
 .rank-details summary { cursor: pointer; font-weight: 600; }
 .ranks { list-style: none; padding: 0; margin: 12px 0 8px; }
 .ranks li { display: flex; align-items: center; gap: 12px; padding: 7px 10px; border-radius: 12px; }
@@ -259,6 +287,14 @@ body.party-on .btn-register { background: var(--party); color: #fff; padding: 30
 .leaderboard .who small { font-size: .76rem; }
 .leaderboard time { font-weight: 600; font-variant-numeric: tabular-nums; font-size: .88rem; white-space: nowrap; }
 .btn-leave { display: block; margin: 8px 0 0 auto; padding: 4px 6px; font-size: .82rem; color: var(--muted); }
+
+/* Instalação */
+.install { background: var(--primary-soft); border-color: transparent; }
+.install strong { display: block; color: var(--primary); margin-bottom: 2px; }
+.install small { display: block; color: var(--text); }
+.install-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.install-actions .btn { padding: 8px 14px; }
+.ios-share { display: inline-block; vertical-align: -3px; color: var(--primary); }
 
 /* Tema */
 .segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; background: var(--surface-2); border-radius: 14px; margin-bottom: 10px; }

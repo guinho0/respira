@@ -88,7 +88,7 @@ function defaults() {
     cravings: [],  // { id, ts }
     water: [],     // { ts, ml }
     party: null,   // { start, packStart, reminderMin, lastReminder }
-    notified: { base: null, milestones: [], limitDay: null, limitLevel: 0, rank: null, rankBase: null },
+    notified: { base: null, milestones: [], limitDay: null, limitLevel: 0, rank: null, rankKey: null },
   };
 }
 
@@ -379,20 +379,24 @@ let pendingLog = null;
 
 function registerNow({ quick = false } = {}) {
   const log = addLog({ trigger: state.party ? 'Álcool' : null });
+  const smoke = rankSmokeText();
+  checkRank();
   checkConsumptionAlerts();
   render();
   if (quick || state.party) {
-    toast(`Registrado · ${todayLogs().length} hoje · beba ${state.settings.waterPerCig} ml de água`, {
+    toast(`Registrado · ${todayLogs().length} hoje · ${smoke.short} · beba ${state.settings.waterPerCig} ml de água`, {
       label: 'Desfazer',
       onClick: () => { removeLog(log.id); render(); },
     });
     return;
   }
-  openLogDetails(log);
+  openLogDetails(log, smoke.long);
 }
 
-function openLogDetails(log) {
+function openLogDetails(log, smokeText = '') {
   pendingLog = log;
+  $('#log-rank').textContent = smokeText;
+  $('#log-rank').hidden = !smokeText;
   $('#log-water-tip').textContent = `💧 Beba ${state.settings.waterPerCig} ml de água agora. Ajuda a hidratar, aliviar a garganta e ocupa o lugar do cigarro seguinte.`;
   renderChips('#log-triggers', TRIGGERS, log.trigger);
   renderChips('#log-intensity', ['1', '2', '3', '4', '5'], log.intensity ? String(log.intensity) : null);
@@ -471,6 +475,7 @@ function applyTheme() {
 
 function render() {
   applyTheme();
+  renderInstall();
   document.body.classList.toggle('party-on', !!state.party);
   $('#party-pill').hidden = !state.party;
   renderHome();
@@ -661,6 +666,7 @@ function renderSettings() {
   updatePricePreview();
   const st = $('#notif-status');
   if (!('Notification' in window)) st.textContent = 'Este navegador não suporta notificações.';
+  else if (isIOS() && !isStandalone()) st.textContent = 'No iPhone, as notificações só funcionam com o app instalado na Tela de Início.';
   else if (Notification.permission === 'granted' && s.notify) st.textContent = '✅ Notificações ativadas.';
   else if (Notification.permission === 'denied') st.textContent = '🚫 Bloqueadas no navegador. Libere nas configurações do site.';
   else st.textContent = 'Notificações desativadas.';
@@ -671,6 +677,51 @@ function updatePricePreview() {
   const p = Number(f.elements.packPrice.value) / Math.max(1, Number(f.elements.perPack.value));
   $('#price-preview').textContent = `Cada cigarro custa ${money(p)}.`;
 }
+
+/* ---------------- Instalação (PWA) ---------------- */
+
+const INSTALL_DISMISS_KEY = 'respira:install-dismissed';
+let installEvent = null; // Android/Chrome: guarda o pedido de instalação para o botão "Instalar"
+
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+/** 'prompt' (botão de instalar), 'ios' (passo a passo do Compartilhar) ou null (já instalado / sem suporte). */
+function installMode() {
+  if (isStandalone()) return null;
+  if (installEvent) return 'prompt';
+  if (isIOS()) return 'ios';
+  return null;
+}
+
+function renderInstall() {
+  const mode = installMode();
+  let dismissed = false;
+  try { dismissed = Date.now() - Number(localStorage.getItem(INSTALL_DISMISS_KEY) || 0) < 14 * DAY; } catch { /* ignora */ }
+  $('#install-card').hidden = !mode || dismissed;
+  $('#install-settings').hidden = !mode;
+  $$('.install-prompt').forEach((el) => { el.hidden = mode !== 'prompt'; });
+  $$('.install-ios').forEach((el) => { el.hidden = mode !== 'ios'; });
+}
+
+async function promptInstall() {
+  if (!installEvent) return;
+  installEvent.prompt();
+  await installEvent.userChoice;
+  installEvent = null;
+  renderInstall();
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installEvent = e;
+  renderInstall();
+});
+window.addEventListener('appinstalled', () => {
+  installEvent = null;
+  renderInstall();
+  toast('Respira instalado! Abra pelo ícone na tela inicial.');
+});
 
 /* ---------------- UI geral ---------------- */
 
@@ -772,6 +823,12 @@ document.addEventListener('click', (e) => {
       notify('Respira', 'As notificações estão funcionando. 🫁', { tag: 'test' }).then((ok) => {
         if (!ok) toast('Ative as notificações primeiro.');
       });
+      break;
+    case 'install': promptInstall(); break;
+    case 'install-dismiss':
+      try { localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); } catch { /* ignora */ }
+      renderInstall();
+      toast('Tudo bem. Você pode instalar depois em Ajustes.');
       break;
     case 'export': exportData(); break;
     case 'reset':
