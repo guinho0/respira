@@ -3,7 +3,7 @@
 **Acesse:** https://guinho0.github.io/respira/
 
 PWA (app web instalável no celular) em HTML/CSS/JS puro, sem etapa de build.
-Os dados ficam salvos só no aparelho (localStorage), com exportar/importar backup.
+Os dados ficam no aparelho (localStorage), com exportar/importar backup. Quem cria um perfil na aba **Amigos** passa a ter uma cópia na nuvem (Supabase).
 
 ## Funcionalidades
 - **Registro de cada cigarro** com um toque; depois, opcionalmente, gatilho (café, estresse, álcool…) e intensidade da vontade.
@@ -16,6 +16,18 @@ Os dados ficam salvos só no aparelho (localStorage), com exportar/importar back
 - **SOS vontade**: respiração guiada + cronômetro de 3 minutos + dica; conta “vontades vencidas”.
 - **Histórico**: últimos 7 dias, horários em que mais fuma, gatilhos, lista editável.
 - **Impacto**: total gasto, projeção anual e estimativa de vida perdida (~20 min/cigarro, UCL 2025).
+- **Ranking por tempo sem fumar**: Fumaça → Bronze (8h) → Prata (1 dia) → Ouro (3 dias) → Platina (1 semana) → Esmeralda (2 semanas) → Diamante (1 mês) → Mestre (3 meses) → Grão-mestre (6 meses) → Lenda (1 ano). Recomeça a cada cigarro; o recorde fica guardado.
+- **Amigos**: nickname, grupos com código/link de convite e placar ordenado por tempo sem fumar. Os amigos veem só nickname, nível, tempo sem fumar, recorde e vontades vencidas.
+
+## Configurar o Supabase (grátis)
+1. Crie um projeto em https://supabase.com (plano Free).
+2. **SQL Editor → New query**: cole e rode [supabase/schema.sql](supabase/schema.sql).
+3. **Authentication → Sign In / Providers**: ative **Allow anonymous sign-ins** (o perfil é criado sem pedir e-mail). Deixe o provedor **Email** ligado (para quem quiser recuperar a conta em outro aparelho).
+4. **Authentication → URL Configuration**: em *Site URL* e *Redirect URLs* coloque `https://guinho0.github.io/respira/` (e `http://localhost:8080/` para testes).
+5. **Project Settings → API**: copie a *Project URL* e a chave *anon/publishable* para [config.js](config.js). A chave é pública por design — a proteção vem das regras RLS do schema. Nunca use a chave *service_role/secret*.
+
+Sem `config.js` preenchido, o app funciona normalmente, só sem perfil e grupos.
+No plano Free, o projeto é pausado após 7 dias sem nenhum acesso; basta reativar no painel.
 
 ## Rodar localmente
 ```bash
@@ -37,4 +49,5 @@ Sem GitHub: com Node instalado, `npx vercel` nesta pasta. Alternativa sem instal
 ## Limitações da v1
 - Notificações são disparadas pelo próprio app: funcionam com o app aberto ou recém-minimizado. Com o app fechado por horas, o marco é avisado na próxima abertura. Para lembretes confiáveis com o app fechado (ex.: modo festa, “1 dia sem fumar”), a v2 precisa de **Web Push com um backend** (ex.: Railway + VAPID).
 - iPhone: notificações só com o app instalado na Tela de Início (iOS 16.4+).
-- Os dados não sincronizam entre aparelhos (v2: contas + banco).
+- Sincronização "o mais recente vence": se o mesmo perfil for usado em dois aparelhos ao mesmo tempo, as mudanças de um podem sobrescrever as do outro.
+- Contas sem e-mail ficam presas ao aparelho: limpar os dados do navegador perde o acesso ao perfil (adicione um e-mail em Amigos → Conta).

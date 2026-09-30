@@ -26,7 +26,10 @@
       <p id="greeting" class="greeting"></p>
 
       <div class="card streak">
-        <span class="label">Sem fumar há</span>
+        <div class="streak-head">
+          <span class="label">Sem fumar há</span>
+          <button id="rank-chip" class="rank-chip" data-tab="social" aria-label="Ver seu nível"></button>
+        </div>
         <strong id="streak-timer" class="streak-timer">—</strong>
         <div class="next-milestone">
           <div class="bar"><span id="next-bar"></span></div>
@@ -138,6 +141,66 @@
       <p class="footnote">Baseado em materiais da American Cancer Society, OMS e NHS. Não substitui orientação médica — procure o SUS (programa de tratamento do tabagismo) ou o Disque Saúde 136.</p>
     </section>
 
+    <!-- AMIGOS -->
+    <section id="view-social" class="view" aria-label="Amigos">
+      <div class="card rank-card">
+        <span class="label">Seu nível</span>
+        <div class="rank-head">
+          <span id="rank-icon" class="rank-icon"></span>
+          <div><strong id="rank-name"></strong><small id="rank-text"></small></div>
+        </div>
+        <div class="bar"><span id="rank-bar"></span></div>
+        <small id="rank-next"></small>
+        <small id="rank-best" class="rank-best"></small>
+      </div>
+      <details class="card rank-details">
+        <summary>Todos os níveis</summary>
+        <ol id="rank-list" class="ranks"></ol>
+        <small class="hint">O nível sobe conforme o tempo sem fumar e recomeça a cada cigarro registrado. Seu recorde fica guardado.</small>
+      </details>
+
+      <h2>Seu perfil</h2>
+      <div id="cloud-off" class="card" hidden>
+        <p class="muted">Perfil e grupos de amigos ainda não estão disponíveis nesta instalação do app.</p>
+      </div>
+      <form id="nick-form" class="card form" hidden>
+        <label>Nickname<input name="nickname" type="text" minlength="3" maxlength="20" autocomplete="nickname" autocapitalize="off" spellcheck="false" placeholder="ex.: pulmao_de_aco" required></label>
+        <small class="hint">De 3 a 20 caracteres: letras, números, _ . ou -. É assim que seus amigos vão te ver.</small>
+        <button id="nick-submit" class="btn btn-primary btn-block" type="submit">Salvar e ativar amigos</button>
+        <small id="nick-privacy" class="hint privacy">Ao salvar, seus registros passam a ter uma cópia segura na nuvem. Seus amigos veem só nickname, nível, tempo sem fumar, recorde e vontades vencidas — nunca seus registros, gastos ou gatilhos.</small>
+      </form>
+      <p id="login-hint" class="muted center" hidden>Já usa o Respira em outro aparelho? <button class="btn btn-ghost btn-inline" data-action="cloud-login">Entrar com e-mail</button></p>
+
+      <div id="groups-area" hidden>
+        <div class="section-head">
+          <h2>Seus grupos</h2>
+          <button class="btn btn-ghost" data-action="groups-refresh">Atualizar</button>
+        </div>
+        <div id="group-list"></div>
+        <div class="card">
+          <form id="join-form" class="inline-form">
+            <input name="code" type="text" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="Código do convite" aria-label="Código do convite">
+            <button class="btn btn-primary" type="submit">Entrar</button>
+          </form>
+          <form id="create-form" class="inline-form">
+            <input name="name" type="text" maxlength="40" placeholder="Nome de um novo grupo" aria-label="Nome do novo grupo">
+            <button class="btn btn-soft" type="submit">Criar</button>
+          </form>
+        </div>
+
+        <h2>Conta</h2>
+        <div class="card">
+          <p id="sync-status" class="muted"></p>
+          <p id="account-status" class="muted"></p>
+          <form id="link-email-form" class="inline-form">
+            <input name="email" type="email" autocomplete="email" placeholder="seu@email.com" aria-label="E-mail" required>
+            <button class="btn btn-primary" type="submit">Proteger</button>
+          </form>
+          <button class="btn btn-ghost btn-block" data-action="cloud-logout">Sair da conta neste aparelho</button>
+        </div>
+      </div>
+    </section>
+
     <!-- AJUSTES -->
     <section id="view-settings" class="view" aria-label="Ajustes">
       <form id="settings-form" class="form">
@@ -188,7 +251,7 @@
 
       <h2>Seus dados</h2>
       <div class="card">
-        <small class="hint">Tudo fica salvo só neste aparelho. Faça backup de vez em quando.</small>
+        <small class="hint">Tudo fica salvo neste aparelho e, se você criou um perfil em Amigos, também na nuvem. Faça backup de vez em quando.</small>
         <button class="btn btn-soft btn-block" data-action="export">Exportar backup (.json)</button>
         <label class="btn btn-soft btn-block file-btn">Importar backup<input id="import-file" type="file" accept="application/json,.json" hidden></label>
         <button class="btn btn-danger btn-block" data-action="reset">Apagar todos os dados</button>
@@ -200,6 +263,7 @@
     <button class="tab active" data-tab="home"><span>🏠</span>Início</button>
     <button class="tab" data-tab="history"><span>📊</span>Histórico</button>
     <button class="tab" data-tab="health"><span>🫁</span>Saúde</button>
+    <button class="tab" data-tab="social"><span>👥</span>Amigos</button>
     <button class="tab" data-tab="settings"><span>⚙️</span>Ajustes</button>
   </nav>
 
@@ -321,9 +385,26 @@
       </div>
       <label>Quando foi o último cigarro? <small class="muted">(opcional)</small><input name="last" type="datetime-local"></label>
       <div class="sheet-actions"><button class="btn btn-primary btn-block" value="ok">Começar</button></div>
+      <p class="center"><button id="onb-login" type="button" class="btn btn-ghost btn-inline" data-action="cloud-login" hidden>Já uso o Respira em outro aparelho</button></p>
     </form>
   </dialog>
 
+  <!-- Entrar com e-mail -->
+  <dialog id="dlg-login">
+    <form method="dialog" class="sheet" id="login-form">
+      <h3>Entrar com e-mail</h3>
+      <p class="muted">Funciona se você já adicionou um e-mail ao seu perfil em Amigos → Conta. Vamos enviar um link de acesso; abra-o neste aparelho e seus dados serão carregados.</p>
+      <label>E-mail<input name="email" type="email" autocomplete="email" required></label>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" value="cancel" formnovalidate>Cancelar</button>
+        <button class="btn btn-primary" value="ok">Enviar link</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
+  <script src="social.js"></script>
 </body>
 </html>

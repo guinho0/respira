@@ -1,6 +1,6 @@
 // Service worker do Respira: cache offline + cliques nas notificações.
-const CACHE = 'respira-v1';
-const ASSETS = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
+const CACHE = 'respira-v2';
+const ASSETS = ['./', 'index.html', 'styles.css', 'app.js', 'social.js', 'config.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));

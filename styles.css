@@ -216,9 +216,53 @@ body.party-on .btn-register { background: var(--party); color: #fff; padding: 30
 .milestones p { margin: 2px 0 0; font-size: .9rem; color: var(--muted); }
 .milestones li.done p { color: var(--text); }
 
+/* Ranking e amigos */
+.streak-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rank-chip {
+  border: none; cursor: pointer; border-radius: 99px; padding: 4px 10px;
+  background: rgba(255, 255, 255, .2); color: inherit; font-size: .82rem; font-weight: 600; white-space: nowrap;
+}
+.rank-head { display: flex; align-items: center; gap: 14px; margin: 8px 0 4px; }
+.rank-icon { font-size: 2.6rem; line-height: 1; }
+.rank-head strong { display: block; font-size: 1.35rem; }
+.rank-head small { display: block; }
+.rank-best { display: block; margin-top: 6px; }
+.rank-details summary { cursor: pointer; font-weight: 600; }
+.ranks { list-style: none; padding: 0; margin: 12px 0 8px; }
+.ranks li { display: flex; align-items: center; gap: 12px; padding: 7px 10px; border-radius: 12px; }
+.ranks li.current { background: var(--primary-soft); }
+.ranks li.locked { opacity: .5; }
+.ranks .rk { font-size: 1.4rem; width: 32px; text-align: center; }
+.ranks strong, .ranks small { display: block; }
+.privacy { margin: 10px 0 0; }
+.center { text-align: center; }
+.btn-inline { padding: 4px 6px; }
+
+.inline-form { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.inline-form:last-child { margin-bottom: 0; }
+.inline-form input { margin-top: 0; flex: 1; }
+.inline-form .btn { flex: none; }
+
+.group-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.group-head strong, .group-head small { display: block; }
+.group-head .btn { padding: 8px 12px; font-size: .88rem; }
+.code { font-family: ui-monospace, "SF Mono", Consolas, monospace; letter-spacing: .08em; color: var(--text); }
+.leaderboard { list-style: none; padding: 0; margin: 12px 0 0; }
+.leaderboard li { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-top: 1px solid var(--border); }
+.leaderboard li.me { background: var(--primary-soft); border-radius: 12px; border-top-color: transparent; }
+.leaderboard li.me + li { border-top-color: transparent; }
+.leaderboard .pos { width: 26px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.leaderboard li:first-child .pos { color: var(--warn); }
+.leaderboard .rk { font-size: 1.3rem; }
+.leaderboard .who { flex: 1; min-width: 0; }
+.leaderboard .who b, .leaderboard .who small { display: block; overflow: hidden; text-overflow: ellipsis; }
+.leaderboard .who small { font-size: .76rem; }
+.leaderboard time { font-weight: 600; font-variant-numeric: tabular-nums; font-size: .88rem; white-space: nowrap; }
+.btn-leave { display: block; margin: 8px 0 0 auto; padding: 4px 6px; font-size: .82rem; color: var(--muted); }
+
 /* Formulários */
 .form label, .sheet label { display: block; font-size: .88rem; color: var(--muted); margin-bottom: 10px; }
-input[type="text"], input[type="number"], input[type="datetime-local"], select {
+input[type="text"], input[type="email"], input[type="number"], input[type="datetime-local"], select {
   display: block; width: 100%; margin-top: 4px; padding: 11px 12px;
   border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
   min-width: 0;
@@ -232,11 +276,11 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 /* Tabbar */
 .tabbar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   background: var(--surface); border-top: 1px solid var(--border);
   padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
 }
-.tab { border: none; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: .75rem; color: var(--muted); padding: 6px 0; border-radius: 12px; }
+.tab { border: none; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: .72rem; color: var(--muted); padding: 6px 0; border-radius: 12px; }
 .tab span { font-size: 1.25rem; filter: grayscale(1); opacity: .7; }
 .tab.active { color: var(--primary); font-weight: 600; }
 .tab.active span { filter: none; opacity: 1; }

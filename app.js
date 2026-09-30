@@ -2,7 +2,8 @@
 
 /* ============================================================
  * Respira — app para acompanhar e reduzir o cigarro.
- * Todos os dados ficam no localStorage deste aparelho.
+ * Os dados ficam no localStorage deste aparelho; com perfil criado,
+ * também são sincronizados com o Supabase (ver social.js).
  * ============================================================ */
 
 const STORAGE_KEY = 'respira:v1';
@@ -64,6 +65,7 @@ function defaults() {
   return {
     version: 1,
     onboarded: false,
+    updatedAt: 0,
     settings: {
       name: '',
       type: 'industrializado',
@@ -84,30 +86,35 @@ function defaults() {
     cravings: [],  // { id, ts }
     water: [],     // { ts, ml }
     party: null,   // { start, packStart, reminderMin, lastReminder }
-    notified: { base: null, milestones: [], limitDay: null, limitLevel: 0 },
+    notified: { base: null, milestones: [], limitDay: null, limitLevel: 0, rank: null, rankBase: null },
   };
 }
 
-function load() {
+/** Completa um estado salvo (local, backup ou nuvem) com os campos padrão. */
+function hydrate(s) {
   const d = defaults();
+  return { ...d, ...s, settings: { ...d.settings, ...s.settings }, notified: { ...d.notified, ...s.notified } };
+}
+
+function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return d;
-    const s = JSON.parse(raw);
-    return { ...d, ...s, settings: { ...d.settings, ...s.settings }, notified: { ...d.notified, ...s.notified } };
+    return raw ? hydrate(JSON.parse(raw)) : defaults();
   } catch {
-    return d;
+    return defaults();
   }
 }
 
 let state = load();
 
-function save() {
+function save({ touch = true } = {}) {
+  if (touch) state.updatedAt = Date.now();
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
     toast('Não foi possível salvar neste aparelho.');
   }
+  if (touch) cloudSchedulePush();
 }
 
 /* ---------------- Utilidades ---------------- */
@@ -457,6 +464,7 @@ function render() {
   renderHome();
   renderHistory();
   renderHealth();
+  renderSocial();
 }
 
 function nextMilestone(elapsed) {
@@ -477,6 +485,7 @@ function renderLive() {
     $('#next-bar').style.width = '100%';
     $('#next-text').textContent = 'Todos os marcos conquistados. Que orgulho!';
   }
+  renderRankLive();
   if (state.party) {
     const p = state.party;
     const nextIn = p.reminderMin * MIN - (Date.now() - p.lastReminder);
@@ -676,6 +685,7 @@ function showTab(name) {
   $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
   if (name === 'settings') renderSettings();
+  if (name === 'social') cloudRefresh();
   window.scrollTo({ top: 0 });
 }
 
@@ -692,8 +702,7 @@ async function importData(file) {
   try {
     const data = JSON.parse(await file.text());
     if (!Array.isArray(data.logs) || typeof data.settings !== 'object') throw new Error('formato');
-    const d = defaults();
-    state = { ...d, ...data, settings: { ...d.settings, ...data.settings }, notified: { ...d.notified, ...data.notified } };
+    state = hydrate(data);
     save();
     render();
     renderSettings();
@@ -753,9 +762,13 @@ document.addEventListener('click', (e) => {
       break;
     case 'export': exportData(); break;
     case 'reset':
-      if (confirm('Apagar TODOS os registros e ajustes deste aparelho? Isso não pode ser desfeito.')) {
-        localStorage.removeItem(STORAGE_KEY);
-        location.reload();
+      if (confirm(cloud.user
+        ? 'Apagar TODOS os registros e ajustes deste aparelho e da nuvem, incluindo seu perfil e grupos? Isso não pode ser desfeito.'
+        : 'Apagar TODOS os registros e ajustes deste aparelho? Isso não pode ser desfeito.')) {
+        cloudWipe().finally(() => {
+          localStorage.removeItem(STORAGE_KEY);
+          location.reload();
+        });
       }
       break;
   }
@@ -881,6 +894,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     render();
     checkMilestones();
+    checkRank();
     checkParty();
   }
 });
@@ -907,6 +921,7 @@ function init() {
   fillTypeSelect('#type-select');
   fillTypeSelect('#onb-type');
   setupSW();
+  setupSocial();
 
   // Aberto por "+1 cigarro" numa notificação com o app fechado
   const params = new URLSearchParams(location.search);
@@ -917,15 +932,17 @@ function init() {
 
   render();
   if (!state.onboarded) openDialog('#dlg-onboarding');
-  else checkMilestones();
+  else { checkMilestones(); checkRank(); }
 
   setInterval(renderLive, 1000);
   setInterval(() => {
     checkMilestones();
+    checkRank();
     checkParty();
     // vira o dia com o app aberto
     if (state.notified.limitDay && state.notified.limitDay !== dayKey()) { banner = null; render(); }
   }, 20 * 1000);
 }
 
-init();
+// Espera o social.js (carregado depois deste arquivo).
+document.addEventListener('DOMContentLoaded', init);
